@@ -8,20 +8,20 @@ clear all
 close all
 
 %% Creating matrix
-imdata = imread('yalefaces/subject02.centerlight');
-subsampled = imresize(imdata,[40,40]);
-finmat = subsampled(:);
-
+finmat = [];
 files = dir('yalefaces/*');
+
 for k = 1:length(files)
     if contains(files(k).name, 'subject')
         baseFileName = files(k).name;
         fullFileName = fullfile('yalefaces', files(k).name);
         imdata = imread(fullFileName);
         subsampled = imresize(imdata,[40,40]);
-        finmat = [finmat subsampled(:)];
+        finmat(end+1,:) = subsampled(:);
     end
 end
+
+% figure; image(finmat);
 
 %% Standardizing data
 m = mean(finmat);
@@ -31,21 +31,39 @@ finmat = finmat - repmat(m,size(finmat,1),1);
 finmat = finmat ./ repmat(s,size(finmat,1),1);
 
 %% 2D using PCA
-% cmat = cov(double(finmat));
-% [V,D] = eig(cmat);
-% 
-% newdata = V * double(finmat)';
-% newdata = newdata';
-% newdata = fliplr(newdata);
-% 
-% variance = D / sum(D(:));
-% figure
-% axes('LineWidth',0.6,...
-%     'FontName','Helvetica',...
-%     'FontSize',8,...
-%     'XAxisLocation','Origin',...
-%     'YAxisLocation','Origin')
-% line(newdata(:,1),newdata(:,2),...
-%     'LineStyle','None',...
-%     'Marker','o');
-% axis equal
+% finmat(:,1) = finmat(:,1)-mean(finmat(:,1));
+% finmat(:,2) = finmat(:,2)-mean(finmat(:,2));
+
+C = cov(finmat);
+[V, D] = eig(C);
+sumTop = 0;
+sumBottom = sum(sum(abs(V)));
+
+for z = 1:size(V,2)
+    sumTop = sum(sum(abs(V(: ,1:z))));
+    if sumTop/sumBottom >= 0.90
+        break
+    end
+end
+
+[~, colnum] = find(D == max(max(D)));
+[row, col] = size(finmat);
+Zmat = [];
+W = [];
+
+for k = 1:2
+   [~, col] = find(D == max(max(D)));
+   Z = finmat*V(:,col);
+   W(:, k) = V(:, col);
+   Zmat(:,end+1) = Z;
+   D(:,col) = 0;
+end
+
+figure
+axes('LineWidth',0.6,...
+    'FontName','Helvetica',...
+    'FontSize',8);
+line(Zmat(:,1),Zmat(:,2),...
+    'LineStyle','None',...
+    'Marker','o');
+grid on
