@@ -38,7 +38,7 @@ clear i j avg std_dev
 rng(0)
 
 %% Call myKMeans
-myKMeans(std_X,6,Y); %Comment to Debug
+myKMeans(std_X,7,Y); %Comment to Debug
 
 %% K-Means Function 
 
