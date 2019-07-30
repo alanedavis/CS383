@@ -35,6 +35,9 @@ Y_std = Y ./ repmat(Ys,size(Y,1),1);
 X_std(:,1) = [];
 Y_std(:,1) = [];
 
+% For Video
+finMat = [];
+
 % Rows and Cols
 [rows, cols] = size(X_std);
 
@@ -88,14 +91,12 @@ while change > 2^-23
     end
 
     % Initialize the cluster purity and purity
-    cpurity = 0;
-    purity = 0;
+    cpurity = 0; purity = 0;
 
     % Iterate k times for every cluster
     % Copy each cluster into temp
     for i = 1:k
-        temp = C(:,:,i);
-        temp = [temp Y];
+        temp = [C(:,:,i) Y];
         holder = [];
         % For loop to remove zero vectors or combine two matrices
         for j = 1:rows
@@ -116,17 +117,19 @@ while change > 2^-23
     purity = purity / rows;
 
     % Plot Clusters
-    % Title 
-    tit = ['Iteration ',num2str(iter),' -',' Purity = ',num2str(purity)];
-    % Clear Last Figure
+    figTitle = ['Iteration ',num2str(iter),' -',' Purity = ',num2str(purity)];
+    
+    % Allow for all to be on figure 1 by clearing the figure
     clf
 
-    for i = 1:k %For every Cluster
+    % For every Cluster
+    % Assign a color and plot
+    for i = 1:k
         color = colors(i);
         scatter3(C(:,1,i),C(:,2,i),C(:,3,i),36,color,'x') %Plot Cluster i
         hold on
         scatter3(means(i,1),means(i,2),means(i,3),75,'MarkerEdgeColor','k','MarkerFaceColor',color); %Plot Mean in Same Color
-        title(tit);
+        title(figTitle);
     end
 
     %Save Plots 
@@ -135,41 +138,41 @@ while change > 2^-23
        addpath('plots')
     end
     
-    imlibrary = [];
-    imname = ['plots/figure',num2str(iter),'.jpg']; %Name the plots and add them to the library
-    imlibrary = [imlibrary;string(imname)];
-    saveas(figure(1),imname)
+    finName = ['plots/figure',num2str(iter),'.jpg']; %Name the plots and add them to the library
+    finMat = [finMat;string(finName)];
+    saveas(figure(1),finName)
 
     %Calculate new means
-    oldmeans = means;       
+    temp2 = means;       
     means = [];
-    for i = 1:k                     %Move cluster to temp working space
+    
+    % Hold cluster in temporary place
+    for i = 1:k
         temp = C(:,:,i);
-        temp = temp(any(temp,2),:);     %Strip 0 vectors
-        means = [means;mean(temp)];     %Compute mean
+        temp = temp(any(temp,2),:);
+        means = [means;mean(temp)];
     end
 
-    %Calculate Manhattan distance D(oldmean,mean)
     change = 0;
     for i = 1:k
-        Di = (means(i,1)-oldmeans(i,1))+(means(i,2)-oldmeans(i,2))+(means(i,3)-oldmeans(i,3));
+        Di = (means(i,1)-temp2(i,1))+(means(i,2)-temp2(i,2))+(means(i,3)-temp2(i,3));
         change = change + Di;
     end
 
-end %End While
+end
 
-    %Construct Video
-    vname = ['K_',num2str(k),'_F_all'];
-    video = VideoWriter(vname); %create the video object
-    video.FrameRate = 1;
-    %video.FileFormat = 'mp4';
-    open(video); %open the file for writing
-    [numImg,c] = size(imlibrary);
-    for ii=1:numImg %where N is the number of images
-      I = imread(char(imlibrary(ii))); %read the next image
-      writeVideo(video,I); %write the image to file
+    % Construct Video
+    % Video will be named
+    name = ['K_',num2str(k),'_F_all'];
+    output = VideoWriter(name, 'MPEG-4');
+    output.FrameRate = 1;
+    open(output);
+    [img,c] = size(finMat);
+    for o=1:img
+      I = imread(char(finMat(o)));
+      writeVideo(output,I);
     end
-    close(video); %close the file
+    close(output);
 
     if exist('plots', 'dir')
        rmdir('plots','s')
